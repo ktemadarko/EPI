@@ -1,0 +1,45 @@
+---
+title: "Item response Theory"
+---
+
+```{r packages, include=FALSE}
+# Checks if package is installed, installs if necessary, and loads package for current session
+Sys.setenv(tz="GMT")
+
+pacman::p_load(
+  RColorBrewer,
+  ggthemes,
+  sjPlot,
+  lubridate,  # general package for handling and converting dates  
+  linelist,   # has function to "guess" messy dates
+  aweek,      # another option for converting dates to weeks, and weeks to dates
+  zoo,        # additional date/time functions
+  tidyverse,  # data management and visualization  
+  rio,
+  magrittr,
+  gtsummary,
+  flextable,
+  ggthemes,
+  ggThemeAssist,
+  tidylog,
+  epitools,
+  usethis)        # data import/export
+```
+
+<br>
+
+
+```{r cool_tips, eval=FALSE, include=FALSE}
+#library(haven)
+#epi <- read_dta("C:/Users/hp/Downloads/Health Workers_Dataset.dta")
+
+```
+
+```{r data, include=FALSE}
+#saveRDS(epi, "itr.RDS")
+
+itr<-readRDS("itr.RDS")
+
+
+
+```
