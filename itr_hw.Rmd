@@ -23,7 +23,8 @@ pacman::p_load(
   ggThemeAssist,
   tidylog,
   epitools,
-  usethis)        # data import/export
+  usethis,
+  mirt)        # data import/export
 ```
 
 <br>
@@ -31,15 +32,157 @@ pacman::p_load(
 
 ```{r cool_tips, eval=FALSE, include=FALSE}
 #library(haven)
-#epi <- read_dta("C:/Users/hp/Downloads/Health Workers_Dataset.dta")
+itr <- haven::read_dta("C:/Users/hp/Downloads/Health Workers_Dataset.dta")
 
 ```
 
 ```{r data, include=FALSE}
-#saveRDS(epi, "itr.RDS")
+saveRDS(itr, "itr.RDS")
 
 itr<-readRDS("itr.RDS")
 
+itr%<>%
+  mutate(id=c(1:157), .before=start)
+```
 
 
+```{r mirt, include=FALSE}
+plan<-itr%>%
+  select(c(1,159:162,164:171,173,175:176,178))%>%
+  select(!starts_with("other"))%>%
+  #filter(!id %in% c(71,89)) %>%
+  replace_na(list(conducting_review=5, review_meetings=3, exclusive_microplanning=3,
+                  facilitators=4, supervisory_visit=4, How_review_progress =4,district_activity_plan=3,resolve_issues_community=3,develop_socialmap=3,
+                  operational_map=3))
+
+haven::write_dta(plan,"plan.dta")
+
+Rea<-itr%>%
+  select(c(1,180:201))%>%
+  select(!starts_with("other"))%>%
+  #select_if(is.numeric)#%>%
+  #select(-c(specify_othermonitoringofimmuniz))
+  #filter(!id %in% c(71,89)) %>%
+  replace_na(list(freq_review_microplan=4, immunization_session=3, 
+                  past_36months_review=5,
+                  support_community_leaders=4, regularmeetings_communityleaders=4, What_microplan =3,
+          
+             get_reviewed =3,immunizationsessions_per_month=3,monitor_efficiency_immunizatio=4,
+  challenges_community=4,additional_opportunity_coverage=4
+                  ))
+  
+com_eng<-itr%>%
+  select(c(1,204:224))%>%
+  select(!starts_with("other"))%>%
+  select(!starts_with("specify"))%>%
+  mutate
+  replace_na(`community_engagement`=3, building_community_participation=3,
+             right_to_vaccination=3, identify_community_structure=3) 
+             trusted_friendly_service=3,engage_with_community=3,
+             effective_communication_channel=5,community_register=3,
+             communication_in_immunization=4, conducting_meeting=3, 
+             component_community_engagement=3)
+
+#%>%
+  select_if(is.numeric)#%>%
+summary(is.na(Rea))  
+  
+summary(is.na(com_eng))
+#itr%<>%mutate(
+  itr$additional_opportunity_coverage<-
+    if_else(itr$additional_opportunity_coverage=="Child Health Day",2,as.numeric(itr$additional_opportunity_coverage))
+
+
+itr$additional_opportunity_coverage<-
+  replace(itr$additional_opportunity_coverage,"Child Health Day",2)
+
+
+#subst%<>%
+  #mutate(total=sum(bi_p))
+
+
+  
+rep=function(x){
+  replace_na(max(x))
+}
+bi_p<-plan%>%
+  mutate(across(c(2:11),try))
+
+p=ltm(bi_p~z1)
+ 
+factor.scores(p)               
+                
+try=function(x){
+  if_else(x==1,1,0)}
+
+
+summary(plan)
+
+summary(is.na(plan))
+summary(mod_p2)
+mod_p<-mirt::mirt(plan,1)
+
+
+mod_p1<-mirt::mirt(plan,1, itemtype = "Rasch")
+mod_p2<-mirt::mirt(bi_p[,2:11],1)
+
+fscores(mod_p2)
+mop<-gpcm(plan)
+factor.scores.gpcm(mop)
+coef(mod_p)
+summary(mod_p)
+
+coef(mod_p2)
+fscores(mod_p)
+fscores(mod_p1)
+
+u=bind_cols(id=bi_p$id,bi=fscores(mod_p2),
+      total=rowSums(bi_p))
+
+
+saveRDS(u,"u.RDS")
+
+bi_p
+haven::write_dta(bi_p,"plan_dichotomous.dta")
+
+plot(mod_p1, type = 'trace') #trace lines
+plot(mod_p, type = 'info')
+
+plot(mod_p, type = c('ICC'))
+```
+
+
+```{r data2, include=FALSE}
+subst<-itr%>%
+  select(c(1,157:315))%>%
+  mutate(across(c(1:50),as_factor))
+
+
+plan_mg<-itr%>%
+  select(c(1,159:178))%>%
+  select(!starts_with("other"))%>%
+  mutate(across(c(2:15),as_factor))%>%
+  filter(!id %in% c(71,89))  #removing row 71, 89
+
+#%>%
+  mutate(orientation_in_REDapproach=if_else(orientation_in_REDapproach==" ","No idea",
+                                            orientation_in_REDapproach))
+
+
+  mutate(orientation_in_REDapproach=if_else(orientation_in_REDapproach==" ","No idea",
+                                            orientation_in_REDapproach),
+         reviewmeetings_monitor_progress==" ","No idea",reviewmeetings_monitor_progress,          key_indicators_monitoring==" ","No idea",key_indicators_monitoring)
+
+plan%<>%
+  mutate(orientation_in_REDapproach=if_else(orientation_in_REDapproach=="No idear","No idea",
+                                            orientation_in_REDapproach),
+         reviewmeetings_monitor_progress==" ","No idea",reviewmeetings_monitor_progress,          key_indicators_monitoring==" ","No idea",key_indicators_monitoring)
+
+
+
+expand.table(plan)
+
+which(is.na(plan_mg),arr.ind = T)
+
+summary(plan_mg)
 ```
