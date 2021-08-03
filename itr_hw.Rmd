@@ -67,22 +67,93 @@ Rea<-itr%>%
                   past_36months_review=5,
                   support_community_leaders=4, regularmeetings_communityleaders=4, What_microplan =3,
           
-             get_reviewed =3,immunizationsessions_per_month=3,monitor_efficiency_immunizatio=4,
-  challenges_community=4,additional_opportunity_coverage=4
+             get_reviewed =3,immunizationsessions_per_month=5,monitor_efficiency_immunizatio=4,
+  challenges_community=4,additional_opportunity_coverage=5,
+  conduct_monitor_immunizationsess=3
                   ))
+
+bi_rea<-Rea%>%
+  mutate(across(c(2:13),try))
+
+bi_rea$total_bi_rea<-rowSums(bi_rea[,2:13])
   
 com_eng<-itr%>%
   select(c(1,204:224))%>%
   select(!starts_with("other"))%>%
   select(!starts_with("specify"))%>%
-  mutate
-  replace_na(`community_engagement`=3, building_community_participation=3,
-             right_to_vaccination=3, identify_community_structure=3) 
+  replace_na(list(community_engagement=3, building_community_participation=3,
+             right_to_vaccination=3, identify_community_structure=3,
              trusted_friendly_service=3,engage_with_community=3,
              effective_communication_channel=5,community_register=3,
              communication_in_immunization=4, conducting_meeting=3, 
-             component_community_engagement=3)
+             component_community_engagement=3))
 
+bi_com_eng<-com_eng%>%
+   mutate(across(c(2:12),try))
+
+bi_p%<>%
+  mutate(total_bi_p=rowSums(bi_p[,2:11]))
+
+superv<-itr%>%
+  select(c(1,226:238))%>%   #240:253
+  select(!starts_with("other"))%>%
+  select(!starts_with("specify"))%>%
+  replace_na(list(What_supportive_supervision=3, plan_for_supportivesupervision=3,
+              supervision_specific_to1or2=4, prepare_for_supervision=3,
+             effective_supervision=3,plan_visit=3,
+             supportive_supervisory_visit=4))
+
+
+bi_superv<-superv%>%
+  mutate(across(c(2:8),try))
+bi_superv%<>%
+  mutate(total_bi_superv=rowSums(bi_superv[,2:8]))
+
+monitor<-itr%>%
+  select(c(1,240:253))%>%
+  select(!starts_with("other"))%>%
+  select(!starts_with("specify"))%>%
+ select_if(is.numeric)%>%
+  replace_na(list(process_for_action=3,process_indicators=4, performance_indicators=3,effective_immunization=3,update_microplan=3,strategy_integrated=3))
+
+summary(is.na(monitor))
+
+bi_monitor<-monitor%>%
+  mutate(across(c(2:7),try))
+bi_monitor%<>%
+  mutate(total_bi_monitor=rowSums(bi_monitor[,2:7]))
+
+ifa=bind_cols(bi_p,bi_rea,bi_com_eng,bi_superv,bi_monitor)
+
+ifa%<>%select(-c(13,27,40,49))%>%rename(
+  reg_meet_com_leaders=regularmeetings_communityleaders,
+  conduct_monitor_immuniz=conduct_monitor_immunizationsess,
+  build_comm_participn=building_community_participation
+)%>%
+  mutate(plan_mg_100=round((total_bi_p/10)*100),
+         rea_100=round((total_bi_rea/12)*100),
+         com_eng_100=round((total_bi_com_eng/11)*100),
+         superv_100=round((total_bi_superv/7)*100),
+         monitor_100=round((total_bi_monitor/6)*100),
+         total_REC=round(((plan_mg_100+rea_100+com_eng_100+superv_100+monitor_100)/500)*100))
+
+names(ifa)<-gsub("-|\\.|\\/|'|\\[|\\]","", names(ifa))
+names(ifa)<-gsub(" ","_", names(ifa))
+haven::write_dta(ifa,"ifa.dta")
+
+facilities<-merge(ifa,itr[,1,6])
+
+haven::write_dta(facilities,"facilities.dta")
+
+#summary(ifa$plan_mg_100,ifa$rea_100, ifa$com_eng_100, ifa$superv_100, ifa$monitor_100)
+summary(ifa[,53:58])
+
+
+
+bi_com_eng%<>%
+  mutate(total_bi_com_eng=rowSums(bi_com_eng[,2:12]))
+  
+ mutate(across(c(2:11),try))
 #%>%
   select_if(is.numeric)#%>%
 summary(is.na(Rea))  
@@ -149,6 +220,12 @@ plot(mod_p1, type = 'trace') #trace lines
 plot(mod_p, type = 'info')
 
 plot(mod_p, type = c('ICC'))
+
+
+results=tibble(name=c("plan_mg", "reach_eli_pop","community_engage","supervision","monitoring","total_REC"),
+               mean=round(c(mean(ifa$plan_mg_100),mean(ifa$rea_100),mean(ifa$com_eng_100),mean(ifa$superv_100),
+                      mean(ifa$monitor_100),mean(ifa$total_REC))))
+print(flextable(results),"docx")
 ```
 
 
